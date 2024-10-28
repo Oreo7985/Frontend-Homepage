@@ -1,15 +1,17 @@
-import { useState } from "react";
 import Navbar from "./Navbar";
-import Footer from "./Footer";
 
 export default function Layout({ children }) {
     return (
-        <div className="min-h-screen bg-light bg-dark flex flex-col">
-            <Navbar />
-            <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
-                {children}
-            </main>
-            <Footer />
+        <div className="min-h-screen flex">
+            {/* 左侧导航栏 */}
+            <Navbar className="w-64 h-screen dark:bg-gray-950" />
+            
+            {/* 主内容区域 */}
+            <div className="flex-1 flex flex-col">
+                <main className="flex-1">
+                    {children}
+                </main>
+            </div>
         </div>
     )
 }
