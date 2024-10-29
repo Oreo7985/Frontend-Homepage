@@ -6,25 +6,23 @@ export default {
   ],
   theme: {
     extend: {
-      colors:{
-        primary: '#3B82F6',
-        secondary: '#F87171',
-        'dark': '#1F2937',
-        'light': '#E5E7EB',
+      keyframes: {
+        blob: {
+          '0%, 100%': {
+            transform: 'scale(1) translate(0px, 0px)',
+          },
+          '33%': {
+            transform: 'scale(1.1) translate(20px, -20px)',
+          },
+          '66%': {
+            transform: 'scale(0.9) translate(-20px, 20px)',
+          },
+        },
       },
-      fontFamily:{
-        'sans': ['Inter','system-ui' ,'sans-serif'],
-      },
-      spacing:{
-        '128': '32rem',
-        '144': '36rem',
-      },
-      container:{
-        center:true,
-        padding: '2rem',
+      animation: {
+        'blob': 'blob 15s ease-in-out infinite',
       },
     },
   },
   plugins: [],
 }
-

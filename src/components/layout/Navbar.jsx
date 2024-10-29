@@ -1,5 +1,5 @@
-import {HomeIcon, UserIcon, CodeIcon, MailIcon, BriefcaseBusinessIcon, SendIcon, InstagramIcon, Moon, SunIcon} from 'lucide-react';
-
+import {HomeIcon, UserIcon, CodeIcon, MailIcon, BriefcaseBusinessIcon, SendIcon, InstagramIcon, Moon, SunIcon, Menu, X} from 'lucide-react';
+import {useState} from 'react';
 
 function NavItem({href, icon: Icon, children}) {
     return (
@@ -13,11 +13,33 @@ function NavItem({href, icon: Icon, children}) {
     )
 }
 
-
-
 export default function Navbar({className}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const toggleMenu = () => {
+        setIsOpen(!isOpen);
+    };
+
     return (
-        <nav className={`dark:bg-black ${className}`}>
+        <>
+        {/* Mobile Hamburger Button */}
+        <button
+            onClick={toggleMenu}
+            className="lg:hidden fixed top-4 right-4 z-50 text-white p-2"
+        >
+            {isOpen ? <X size={25}/> : <Menu size={25}/>}
+        </button>
+
+            {/* 导航栏 */}
+        <nav className={`
+                ${className}
+                dark:bg-black
+                transition-transform duration-300
+                lg:translate-x-0
+                ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                lg:relative fixed
+                z-40
+            `}>
             <div className="p-4 flex flex-col h-full">
                 <div className="flex flex-col space-y-6 justify-start ml-11 my-auto">
                     <div className="py-10">
@@ -39,5 +61,6 @@ export default function Navbar({className}) {
                 </div>
             </div>
         </nav>
+        </>
     )
 }

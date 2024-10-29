@@ -11,3 +11,9 @@ I am a master student at the humboldt university of berlin. I am studying comput
 
 -2024.10.28: Add the home page 
 ![image](./public/record/2024-10-28.png)
+
+-2024.10.29: Navbar and Homepage animation
+![image](./public/record/2024-10-29.png)
+![image](./public/record/2024-10-29-1.png)
+![image](./public/record/2024-10-29-2.png)
+
