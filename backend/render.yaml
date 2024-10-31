@@ -1,0 +1,12 @@
+# render.yaml
+services:
+  - type: web
+    name: backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: INSTAGRAM_TOKEN
+        sync: false  # 这表示这是一个需要手动设置的秘密值
+      - key: PORT
+        value: 5002
