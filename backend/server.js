@@ -5,6 +5,12 @@ require('dotenv').config();
 
 const app = express();
 
+// 基本的健康检查路由
+app.get('/', (req, res) => {
+    res.json({ status: 'Server is running' });
+});
+
+
 // CORS 配置
 const corsOptions = {
     origin: ['http://localhost:5001', 'http://localhost:3000','https://oreo7985.github.io/Frontend-Homepage'], // 允许的前端域名和端口
@@ -95,7 +101,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5002 ||10000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
