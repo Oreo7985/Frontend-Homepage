@@ -7,6 +7,8 @@ I am a master student at the Humboldt University of Berlin, studying Computer Sc
 
 ### Development Progress
 
+#### 2024.10.31: add backend, add instagram api, backend on render
+
 #### 2024.10.30: Learned Box Model
  <img src="./public/record/2024-10-30.png" width="500" alt="Homepage"/>
 
