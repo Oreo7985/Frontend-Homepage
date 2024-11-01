@@ -13,11 +13,10 @@ app.get('/', (req, res) => {
 
 // CORS 配置
 const corsOptions = {
-    origin: ['http://localhost:5001', 'http://localhost:3000','https://oreo7985.github.io/Frontend-Homepage'], // 允许的前端域名和端口
+    origin: ['http://localhost:5001', 'http://localhost:3000','https://oreo7985.github.io/Frontend-Homepage', 'https://oreo7985.github.io/'], // 允许的前端域名和端口
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 允许的HTTP方法
     allowedHeaders: ['Content-Type', 'Authorization'], // 允许的请求头
     credentials: true, // 允许携带凭证
-    maxAge: 86400 // 预检请求的有效期，单位秒
 };
 
 // 中间件
