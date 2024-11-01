@@ -32,7 +32,7 @@ export default defineConfig({
         // 生成的文件名格式
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+        assetFileNames: 'assets/[name]-[hash].[extname]'
       }
     }
   },

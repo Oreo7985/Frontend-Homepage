@@ -1,0 +1,12 @@
+{
+    "/*": {
+      "X-Frame-Options": "DENY",
+      "X-Content-Type-Options": "nosniff"
+    },
+    "/*.css": {
+      "Content-Type": "text/css"
+    },
+    "/*.js": {
+      "Content-Type": "application/javascript"
+    }
+  }
