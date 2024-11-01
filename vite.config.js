@@ -11,12 +11,18 @@ export default defineConfig({
   build: {
     rollupOptions: {
       external: [],
+      output: {
+        manualChunks:undefined
+      }
     },
-    commonjsOptions: {
-      include: [/node_modules/],
-    },
+    target: 'esnext',
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+    sourcemap: false
   },
   optimizeDeps: {
     include: ['react', 'react-dom'],
+    exclude: []
   }
 })
