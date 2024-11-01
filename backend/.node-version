@@ -1,1 +1,1 @@
-echo "latest" > .node-version
+echo "20.9.0" > .node-version
