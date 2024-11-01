@@ -7,5 +7,16 @@ export default defineConfig({
   plugins: [react()],
   server:{
     port:5001
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+    },
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
   }
 })

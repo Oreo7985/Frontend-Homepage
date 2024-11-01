@@ -2,6 +2,9 @@
   "name": "frontend-homepage",
   "homepage": "https://github.com/Oreo7985/Frontend-Homepage",
   "private": true,
+  "engine": {
+    "node": ">=18.18.0"
+  },
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -10,7 +13,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "prebuild": "rm -rf node_modules/.vite"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.5",
