@@ -10,7 +10,14 @@ export default defineConfig({
     port: 5001,
     open: true,          // 自动打开浏览器
     cors: true,          // 启用 CORS
-    strictPort: false    // 如果端口被占用，使用下一个可用端口
+    strictPort: false,    // 如果端口被占用，使用下一个可用端口
+    proxy: {
+      '/api': {
+        target: 'https://frontend-homepage.onrender.com',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   
   build: {
