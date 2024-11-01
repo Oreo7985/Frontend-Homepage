@@ -13,7 +13,7 @@
     "postbuild": "cp public/_headers dist/ && cp public/_routes.json dist/ && cp public/_redirects dist/",
     "postinstall": "npm run build:prepare",
     "build:prepare": "node ./scripts/prepare-build.js",
-    "lint": "eslint .",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
