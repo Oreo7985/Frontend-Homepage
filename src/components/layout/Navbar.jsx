@@ -1,4 +1,4 @@
-import {HomeIcon, UserIcon, CodeIcon, MailIcon, BriefcaseBusinessIcon, SendIcon, InstagramIcon, Moon, SunIcon, Menu, X} from 'lucide-react';
+import {HomeIcon, UserIcon, SendIcon,Briefcase, InstagramIcon, SunIcon, Menu, X} from 'lucide-react';
 import {useState} from 'react';
 import {Link} from 'react-router-dom';
 
@@ -50,7 +50,7 @@ export default function Navbar({className}) {
                     </div>
                     <NavItem to="/" icon={HomeIcon}>Home</NavItem>
                     <NavItem to="/about" icon={UserIcon}>About</NavItem>
-                    <NavItem to="/projects" icon={BriefcaseBusinessIcon}>Projects</NavItem>
+                    <NavItem to="/projects" icon={Briefcase}>Projects</NavItem>
                     <NavItem to="/instagram" icon={InstagramIcon}>Instagram</NavItem>
                     <NavItem to="/" icon={SendIcon}>Contact</NavItem>
 
