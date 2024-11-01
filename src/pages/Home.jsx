@@ -42,7 +42,7 @@ export default function Home({ className }) {
                 >
                   <div className="w-full h-full">
                     <img 
-                      src="../public/selfie.jpg"
+                      src="/selfie.jpg"
                       alt="Luhang Fang"
                       className="w-full h-full object-cover"
                     />
