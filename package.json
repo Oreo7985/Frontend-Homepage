@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "NODE_ENV=production vite build",
+    "postbuild": "cp public/_headers dist/ && cp public/_routes.json dist/ && cp public/_redirects dist/",
     "postinstall": "npm run build:prepare",
     "build:prepare": "node ./scripts/prepare-build.js",
     "lint": "eslint .",
