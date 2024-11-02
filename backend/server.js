@@ -1,20 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
-
-// 速率限制配置
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15分钟
-    max: 100, // 限制每个IP的请求次数
-    message: { 
-        success: false,
-        error: 'Too many requests, please try again later.'
-    }
-});
 
 // CORS 配置
 const corsOptions = {
@@ -24,7 +13,7 @@ const corsOptions = {
         'https://www.luhang.dev',
         'https://frontend-homepage.onrender.com'
     ],
-    methods: ['GET'], // 只允许GET请求，因为我们只需要获取数据
+    methods: ['GET'],
     allowedHeaders: ['Content-Type'],
     credentials: true,
 };
@@ -32,7 +21,6 @@ const corsOptions = {
 // 中间件
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(limiter);
 
 // 内存缓存
 let postsCache = {
@@ -90,23 +78,28 @@ app.get('/api/instagram', async (req, res) => {
                 media_url: post.media_url,
                 permalink: post.permalink,
                 timestamp: post.timestamp
-            }));
+            }))
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // 按时间排序
 
         // 更新缓存
         postsCache = {
             data: { 
                 success: true,
                 data: imagePosts,
-                total: imagePosts.length
+                total: imagePosts.length,
+                cached: false
             },
             timestamp: now
         };
 
-        // 设置响应头和返回数据
+        // 设置缓存控制头
         res.set('Cache-Control', 'public, max-age=300');
+        
+        // 返回数据时标记为非缓存数据
         res.json(postsCache.data);
 
     } catch (error) {
+        // 详细的错误日志
         console.error('Instagram API Error:', {
             message: error.message,
             response: error.response?.data,
@@ -119,15 +112,21 @@ app.get('/api/instagram', async (req, res) => {
         res.status(statusCode).json({
             success: false,
             error: 'Failed to fetch Instagram posts',
-            details: process.env.NODE_ENV === 'development' 
-                ? error.message 
-                : 'An error occurred while fetching posts',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined,
             status: statusCode
         });
     }
 });
 
-// 通用错误处理
+// 404 处理
+app.use((req, res) => {
+    res.status(404).json({ 
+        success: false,
+        error: 'Not Found' 
+    });
+});
+
+// 错误处理中间件
 app.use((err, req, res, next) => {
     console.error('Unhandled Error:', {
         message: err.message,
@@ -139,14 +138,6 @@ app.use((err, req, res, next) => {
         success: false,
         error: 'Internal Server Error',
         details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
-
-// 404处理
-app.use((req, res) => {
-    res.status(404).json({ 
-        success: false,
-        error: 'Not Found' 
     });
 });
 
