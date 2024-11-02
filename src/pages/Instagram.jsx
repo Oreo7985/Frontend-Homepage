@@ -106,40 +106,108 @@ export default function Instagram() {
             <div className="min-h-screen flex items-center">
                 <div className={`container mx-auto px-4 ${isMobile ? 'pt-20' : 'py-8'}`}>
                     <div className="relative max-w-[1400px] mx-auto px-16 md:px-20">
-                        {/* 桌面端和平板端的导航按钮 */}
-                        {isMounted && !isMobile && (
+                        {/* 如果有多页，显示导航按钮和页码 */}
+                        {totalPages > 1 && (
                             <>
-                                {currentPage > 1 && (
-                                    <button
-                                        onClick={goToPrevPage}
-                                        className="absolute -left-4 top-1/2 -translate-y-1/2
-                                                 p-3 rounded-full 
-                                                 bg-gray-200 dark:bg-gray-800/50
-                                                 text-gray-700 dark:text-white
-                                                 hover:bg-gray-300 dark:hover:bg-gray-700
-                                                 transition-colors backdrop-blur-sm
-                                                 shadow-lg
-                                                 hidden md:flex items-center justify-center z-10"
-                                        aria-label="Previous page"
-                                    >
-                                        <ChevronLeft className="w-8 h-8" />
-                                    </button>
+                                {/* 平板和桌面端的导航按钮 */}
+                                {!isMobile && (
+                                    <>
+                                        {/* 左侧按钮 */}
+                                        <button
+                                            onClick={goToPrevPage}
+                                            className={`
+                                                absolute -left-4 top-1/2 -translate-y-1/2
+                                                p-3 rounded-full 
+                                                bg-gray-200 dark:bg-gray-800/50
+                                                text-gray-700 dark:text-white
+                                                ${currentPage === 1 
+                                                    ? 'opacity-50 cursor-not-allowed' 
+                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
+                                                transition-all duration-200
+                                                shadow-lg
+                                                hidden md:flex items-center justify-center z-10
+                                            `}
+                                            disabled={currentPage === 1}
+                                            aria-label="Previous page"
+                                        >
+                                            <ChevronLeft className="w-8 h-8" />
+                                        </button>
+
+                                        {/* 右侧按钮 */}
+                                        <button
+                                            onClick={goToNextPage}
+                                            className={`
+                                                absolute -right-4 top-1/2 -translate-y-1/2
+                                                p-3 rounded-full 
+                                                bg-gray-200 dark:bg-gray-800/50
+                                                text-gray-700 dark:text-white
+                                                ${currentPage === totalPages 
+                                                    ? 'opacity-50 cursor-not-allowed' 
+                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
+                                                transition-all duration-200
+                                                shadow-lg
+                                                hidden md:flex items-center justify-center z-10
+                                            `}
+                                            disabled={currentPage === totalPages}
+                                            aria-label="Next page"
+                                        >
+                                            <ChevronRight className="w-8 h-8" />
+                                        </button>
+
+                                        {/* 页码显示 - 平板和桌面端 */}
+                                        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2
+                                                      text-gray-700 dark:text-gray-300 
+                                                      font-medium text-sm
+                                                      hidden md:block"
+                                        >
+                                            {currentPage} / {totalPages}
+                                        </div>
+                                    </>
                                 )}
-                                {currentPage < totalPages && (
-                                    <button
-                                        onClick={goToNextPage}
-                                        className="absolute -right-4 top-1/2 -translate-y-1/2
-                                                 p-3 rounded-full 
-                                                 bg-gray-200 dark:bg-gray-800/50
-                                                 text-gray-700 dark:text-white
-                                                 hover:bg-gray-300 dark:hover:bg-gray-700
-                                                 transition-colors backdrop-blur-sm
-                                                 shadow-lg
-                                                 hidden md:flex items-center justify-center z-10"
-                                        aria-label="Next page"
-                                    >
-                                        <ChevronRight className="w-8 h-8" />
-                                    </button>
+
+                                {/* 移动端的分页控制 */}
+                                {isMobile && (
+                                    <div className="mt-8 flex justify-center items-center gap-4">
+                                        <button
+                                            onClick={goToPrevPage}
+                                            className={`
+                                                p-3 rounded-full
+                                                bg-gray-200 dark:bg-gray-800/50
+                                                text-gray-700 dark:text-white
+                                                ${currentPage === 1 
+                                                    ? 'opacity-50 cursor-not-allowed' 
+                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
+                                                transition-all duration-200
+                                                shadow-lg
+                                            `}
+                                            disabled={currentPage === 1}
+                                            aria-label="Previous page"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+
+                                        <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                            {currentPage} / {totalPages}
+                                        </span>
+
+                                        <button
+                                            onClick={goToNextPage}
+                                            className={`
+                                                p-3 rounded-full
+                                                bg-gray-200 dark:bg-gray-800/50
+                                                text-gray-700 dark:text-white
+                                                ${currentPage === totalPages 
+                                                    ? 'opacity-50 cursor-not-allowed' 
+                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
+                                                transition-all duration-200
+                                                shadow-lg
+                                            `}
+                                            disabled={currentPage === totalPages}
+                                            aria-label="Next page"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
+                                    </div>
                                 )}
                             </>
                         )}

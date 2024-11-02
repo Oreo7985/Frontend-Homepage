@@ -14,7 +14,7 @@ function NavItem({to, icon: Icon, children}) {
                 rounded-lg
                 ${isActive 
                     ? 'text-white bg-gray-800/50' 
-                    : 'text-gray-300 hover:text-white hover:bg-gray-800/30'}
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/30'}
             `}
         >
             <Icon 
@@ -23,8 +23,8 @@ function NavItem({to, icon: Icon, children}) {
             />
             {children && (
               <span className={`
-                text-base leading-none transition-opacity
-                ${isActive ? 'opacity-100' : 'opacity-80'}
+                text-base leading-none transition-opacity font-medium
+                ${isActive ? 'opacity-100' : 'opacity-90'}
               `}>
                 {children}
               </span>
@@ -38,7 +38,7 @@ export default function Navbar({ className, isOpen, onToggle }) {
     
     return (
         <>
-            {/* Mobile Menu Button - 亮色/暗色模式适配 */}
+            {/* Mobile Menu Button */}
             <button
                 onClick={onToggle}
                 className="xl:hidden fixed top-4 left-4 z-50 p-2 
@@ -73,7 +73,7 @@ export default function Navbar({ className, isOpen, onToggle }) {
                     
                     <div className="flex flex-col items-center gap-12">
                         {/* Logo Section */}
-                        <div className="px-3 relative">
+                        <div className="px-3">
                             <Link 
                                 to="/" 
                                 className="text-2xl sm:text-3xl md:text-4xl 
@@ -98,10 +98,10 @@ export default function Navbar({ className, isOpen, onToggle }) {
                     {/* Footer */}
                     <div className="flex-1 flex items-end p-4">
                         <div className='px-3 py-6 text-center w-full'>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 italic">
                                 &copy; {new Date().getFullYear()} Luhang Fang
                             </p>
-                            <p className='text-sm text-gray-500 dark:text-gray-400 italic'>
+                            <p className='text-sm text-gray-600 dark:text-gray-400 italic'>
                                 All rights reserved
                             </p>
                         </div>
