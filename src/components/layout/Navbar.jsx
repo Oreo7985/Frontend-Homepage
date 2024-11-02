@@ -1,5 +1,5 @@
 // Navbar.jsx
-import {HomeIcon, UserIcon, SendIcon, Briefcase, InstagramIcon, SunIcon, Menu, X} from 'lucide-react';
+import {HomeIcon, UserIcon, Briefcase, InstagramIcon, SunIcon, Menu, X} from 'lucide-react';
 import {Link} from 'react-router-dom';
 
 function NavItem({to, icon: Icon, children}) {
@@ -61,13 +61,9 @@ export default function Navbar({ className, isOpen, onToggle }) {
                             <NavItem to="/about" icon={UserIcon}>About</NavItem>
                             <NavItem to="/projects" icon={Briefcase}>Projects</NavItem>
                             <NavItem to="/instagram" icon={InstagramIcon}>Instagram</NavItem>
-                            <NavItem to="/contact" icon={SendIcon}>Contact</NavItem>
                         </div>
                         
                         {/* Theme Toggle */}
-                        <div className="px-3">
-                            <NavItem to="" icon={SunIcon}/>
-                        </div>
                     </div>
                     
                     <div className="flex-1 flex items-end p-4">

@@ -14,7 +14,6 @@ function App() {
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
           <Route path="projects" element={<Projects />} />
-          <Route path="cssexercise" element={<CSSExercise />} />
           <Route path="instagram" element={<Instagram/>} />
           <Route path="*" element={<NotFound />} />
         </Route>
