@@ -104,7 +104,6 @@ export default function Instagram() {
     return (
         <div className="flex-1 dark:bg-gray-950">
             <div className="min-h-screen flex items-center">
-                {/* 移动端添加顶部内边距 */}
                 <div className={`container mx-auto px-4 ${isMobile ? 'pt-20' : 'py-8'}`}>
                     <div className="relative max-w-[1400px] mx-auto px-16 md:px-20">
                         {/* 桌面端和平板端的导航按钮 */}
@@ -114,8 +113,12 @@ export default function Instagram() {
                                     <button
                                         onClick={goToPrevPage}
                                         className="absolute -left-4 top-1/2 -translate-y-1/2
-                                                 p-3 rounded-full bg-gray-800/50 backdrop-blur-sm
-                                                 text-white hover:bg-gray-700 transition-colors
+                                                 p-3 rounded-full 
+                                                 bg-gray-200 dark:bg-gray-800/50
+                                                 text-gray-700 dark:text-white
+                                                 hover:bg-gray-300 dark:hover:bg-gray-700
+                                                 transition-colors backdrop-blur-sm
+                                                 shadow-lg
                                                  hidden md:flex items-center justify-center z-10"
                                         aria-label="Previous page"
                                     >
@@ -126,8 +129,12 @@ export default function Instagram() {
                                     <button
                                         onClick={goToNextPage}
                                         className="absolute -right-4 top-1/2 -translate-y-1/2
-                                                 p-3 rounded-full bg-gray-800/50 backdrop-blur-sm
-                                                 text-white hover:bg-gray-700 transition-colors
+                                                 p-3 rounded-full 
+                                                 bg-gray-200 dark:bg-gray-800/50
+                                                 text-gray-700 dark:text-white
+                                                 hover:bg-gray-300 dark:hover:bg-gray-700
+                                                 transition-colors backdrop-blur-sm
+                                                 shadow-lg
                                                  hidden md:flex items-center justify-center z-10"
                                         aria-label="Next page"
                                     >
@@ -140,24 +147,7 @@ export default function Instagram() {
                         {/* 图片网格 */}
                         <AnimatePresence mode="wait" initial={false}>
                             <motion.div
-                                key={currentPage}
-                                initial={{ 
-                                    x: slideDirection * 1000,
-                                    opacity: 0 
-                                }}
-                                animate={{ 
-                                    x: 0,
-                                    opacity: 1 
-                                }}
-                                exit={{ 
-                                    x: slideDirection * -1000,
-                                    opacity: 0 
-                                }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 260,
-                                    damping: 20
-                                }}
+                                // ... 动画属性保持不变 ...
                                 className={`grid gap-6 md:gap-8 lg:gap-10
                                     ${isMobile ? 'grid-cols-1' : 
                                       isTablet ? 'grid-cols-2' : 
@@ -213,19 +203,29 @@ export default function Instagram() {
                                 {currentPage > 1 && (
                                     <button
                                         onClick={goToPrevPage}
-                                        className="p-3 rounded-full bg-gray-800/50 backdrop-blur-sm text-white hover:bg-gray-700 transition-colors"
+                                        className="p-3 rounded-full
+                                                 bg-gray-200 dark:bg-gray-800/50
+                                                 text-gray-700 dark:text-white
+                                                 hover:bg-gray-300 dark:hover:bg-gray-700
+                                                 transition-colors backdrop-blur-sm
+                                                 shadow-lg"
                                         aria-label="Previous page"
                                     >
                                         <ChevronLeft className="w-6 h-6" />
                                     </button>
                                 )}
-                                <span className="flex items-center text-white">
+                                <span className="flex items-center text-gray-700 dark:text-white">
                                     {currentPage} / {totalPages}
                                 </span>
                                 {currentPage < totalPages && (
                                     <button
                                         onClick={goToNextPage}
-                                        className="p-3 rounded-full bg-gray-800/50 backdrop-blur-sm text-white hover:bg-gray-700 transition-colors"
+                                        className="p-3 rounded-full
+                                                 bg-gray-200 dark:bg-gray-800/50
+                                                 text-gray-700 dark:text-white
+                                                 hover:bg-gray-300 dark:hover:bg-gray-700
+                                                 transition-colors backdrop-blur-sm
+                                                 shadow-lg"
                                         aria-label="Next page"
                                     >
                                         <ChevronRight className="w-6 h-6" />
