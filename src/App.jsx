@@ -3,8 +3,8 @@ import Layout from './components/layout/Layout'
 import Home from './pages/Home'
 import About from './pages/About'
 import Projects from './pages/Projects'
-import CSSExercise from './pages/Exercise'
 import Instagram from './pages/Instagram'
+
 
 function App() {
   return (
