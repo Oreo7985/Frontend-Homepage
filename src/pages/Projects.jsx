@@ -42,7 +42,7 @@ export default function Projects({ className }) {
         >
           {/* 页面标题 */}
           <motion.div {...fadeInUp} className="text-center mb-12">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl xl:pr-20 sm:pr-14 md:pr-12 pr-12 font-bold mb-4">
+            <h1 className="text-black dark:text-gray-300 text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-bold mb-4">
               My{' '}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-teal-400">
                 Projects
