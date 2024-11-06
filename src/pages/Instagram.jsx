@@ -86,13 +86,15 @@ export default function Instagram() {
                     return newPosts;
                 });
                 
-                setNextCursor(data.pagination.nextCursor);
-                setHasNextPage(data.pagination.hasNextPage);
+                // 安全地访问分页数据
+                setNextCursor(data.pagination?.nextCursor || null);
+                setHasNextPage(data.pagination?.hasNextPage ?? false);
             } else {
                 throw new Error(data.error || 'Failed to fetch posts');
             }
         } catch (err) {
             setError(err.message);
+            setHasNextPage(false); // 出错时停止尝试加载更多
         } finally {
             setLoading(false);
         }
