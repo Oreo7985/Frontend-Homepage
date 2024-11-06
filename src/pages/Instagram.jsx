@@ -1,308 +1,275 @@
-import { useState, useEffect } from 'react';
-import { INSTAGRAM_API_URL } from '../config/api';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Instagram as InstagramIcon, Image, Camera, Heart } from 'lucide-react';
+import { INSTAGRAM_API_URL,INSTAGRAM_USERNAME  } from '../config/api';
 
 export default function Instagram() {
     const [posts, setPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [slideDirection, setSlideDirection] = useState(0);
-    const [isMounted, setIsMounted] = useState(false);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [hasNextPage, setHasNextPage] = useState(true);
+    const observerTarget = useRef(null);
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
-
-    // 设备类型检测
-    const isMobile = windowWidth <= 640;
-    const isTablet = windowWidth > 640 && windowWidth <= 1024;
     
-    // 根据设备类型设置每页显示的数量
-    const postsPerPage = isMobile ? 10 : isTablet ? 4 : 6;
+    const fadeInUp = {
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.5 }
+    };
+
+    const LoadingIndicator = () => (
+        <div className="flex justify-center items-center gap-2 text-blue-500">
+            <Camera className="w-5 h-5 animate-pulse" />
+            <span className="text-gray-600 dark:text-gray-400">Loading more posts...</span>
+        </div>
+    );
+
+    const handleObserver = useCallback((entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loading && hasNextPage) {
+            loadPosts();
+        }
+    }, [loading, hasNextPage]);
 
     useEffect(() => {
-        setIsMounted(true);
+        const observer = new IntersectionObserver(handleObserver, {
+            root: null,
+            rootMargin: '50%',
+            threshold: 0.1
+        });
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [handleObserver]);
+
+    useEffect(() => {
         const handleResize = () => {
-            const newWidth = window.innerWidth;
-            const wasDesktop = windowWidth > 1024;
-            const wasTablet = windowWidth > 640 && windowWidth <= 1024;
-            const wasMobile = windowWidth <= 640;
-
-            const isNowDesktop = newWidth > 1024;
-            const isNowTablet = newWidth > 640 && newWidth <= 1024;
-            const isNowMobile = newWidth <= 640;
-
-            // 只有当设备类型改变时才重置页码
-            if ((wasDesktop && !isNowDesktop) || 
-                (wasTablet && !isNowTablet) || 
-                (wasMobile && !isNowMobile)) {
-                setCurrentPage(1);
-                setSlideDirection(0);
-            }
-
-            setWindowWidth(newWidth);
+            setWindowWidth(window.innerWidth);
         };
 
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [windowWidth]);
-
-    useEffect(() => {
-        const fetchPosts = async () => {
-            try {
-                const response = await fetch(INSTAGRAM_API_URL);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch Instagram posts');
-                }
-                const data = await response.json();
-                setPosts(data.data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPosts();
     }, []);
 
-    // 计算当前页的帖子
-    const totalPages = Math.ceil(posts.length / postsPerPage);
-    const indexOfLastPost = currentPage * postsPerPage;
-    const indexOfFirstPost = indexOfLastPost - postsPerPage;
-    const currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
+    const loadPosts = async () => {
+        if (loading || (!hasNextPage && posts.length > 0)) return;
+        
+        setLoading(true);
+        try {
+            // 构建URL，包含分页参数
+            const url = new URL(INSTAGRAM_API_URL);
+            if (nextCursor) {
+                url.searchParams.append('cursor', nextCursor);
+            }
+            url.searchParams.append('limit', '6'); // 每页6张图片
 
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            setSlideDirection(1);
-            setCurrentPage(prev => prev + 1);
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Failed to fetch Instagram posts');
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setPosts(prevPosts => {
+                    // 合并并去重
+                    const newPosts = [...prevPosts];
+                    data.data.forEach(post => {
+                        if (!newPosts.some(p => p.id === post.id)) {
+                            newPosts.push(post);
+                        }
+                    });
+                    return newPosts;
+                });
+                
+                setNextCursor(data.pagination.nextCursor);
+                setHasNextPage(data.pagination.hasNextPage);
+            } else {
+                throw new Error(data.error || 'Failed to fetch posts');
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const goToPrevPage = () => {
-        if (currentPage > 1) {
-            setSlideDirection(-1);
-            setCurrentPage(prev => prev - 1);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-gray-600 dark:text-gray-400">Loading...</div>
-            </div>
-        );
-    }
+    // 初始加载
+    useEffect(() => {
+        loadPosts();
+    }, []);
 
     if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-red-500">Error: {error}</div>
-            </div>
+            <motion.div 
+                className="min-h-screen flex items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+            >
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                    <div className="text-red-500 flex items-center gap-2">
+                        <Image className="w-5 h-5" />
+                        Error: {error}
+                    </div>
+                </div>
+            </motion.div>
         );
     }
 
     return (
-        <div className="flex-1 dark:bg-gray-950">
-            <div className="min-h-screen flex items-center">
-                <div className={`container mx-auto px-4 ${isMobile ? 'pt-20' : 'py-8'}`}>
-                    <div className="relative max-w-[1400px] mx-auto px-16 md:px-20">
-                        {/* 如果有多页，显示导航按钮和页码 */}
-                        {totalPages > 1 && (
-                            <>
-                                {/* 平板和桌面端的导航按钮 */}
-                                {!isMobile && (
-                                    <>
-                                        {/* 左侧按钮 */}
-                                        <button
-                                            onClick={goToPrevPage}
-                                            className={`
-                                                absolute -left-4 top-1/2 -translate-y-1/2
-                                                p-3 rounded-full 
-                                                bg-gray-200 dark:bg-gray-800/50
-                                                text-gray-700 dark:text-white
-                                                ${currentPage === 1 
-                                                    ? 'opacity-50 cursor-not-allowed' 
-                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
-                                                transition-all duration-200
-                                                shadow-lg
-                                                hidden md:flex items-center justify-center z-10
-                                            `}
-                                            disabled={currentPage === 1}
-                                            aria-label="Previous page"
-                                        >
-                                            <ChevronLeft className="w-8 h-8" />
-                                        </button>
+        <div className="min-h-screen dark:bg-black">
+            <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-12">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.8 }}
+                >
+                    {/* 修改了标题部分的居中样式 */}
+                    <motion.div 
+                        {...fadeInUp} 
+                        className="flex flex-col items-center justify-center text-center mb-12"
+                    >
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-bold  xl:pr-20 sm:pr-14 md:pr-12 pr-12  mb-4 text-center">
+                            My{' '}
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-teal-400">
+                                Instagram
+                            </span>
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 mb-3">
+                            A personal photo gallery    
+                        </p>
+                        <div className="flex items-center justify-center gap-3">
+                            <InstagramIcon className="w-6 h-6 text-blue-500" />
+                            <span className="text-gray-600 dark:text-gray-400">@{INSTAGRAM_USERNAME}</span>
+                        </div>
+                    </motion.div>
 
-                                        {/* 右侧按钮 */}
-                                        <button
-                                            onClick={goToNextPage}
-                                            className={`
-                                                absolute -right-4 top-1/2 -translate-y-1/2
-                                                p-3 rounded-full 
-                                                bg-gray-200 dark:bg-gray-800/50
-                                                text-gray-700 dark:text-white
-                                                ${currentPage === totalPages 
-                                                    ? 'opacity-50 cursor-not-allowed' 
-                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
-                                                transition-all duration-200
-                                                shadow-lg
-                                                hidden md:flex items-center justify-center z-10
-                                            `}
-                                            disabled={currentPage === totalPages}
-                                            aria-label="Next page"
-                                        >
-                                            <ChevronRight className="w-8 h-8" />
-                                        </button>
-
-                                        {/* 页码显示 - 平板和桌面端 */}
-                                        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2
-                                                      text-gray-700 dark:text-gray-300 
-                                                      font-medium text-sm
-                                                      hidden md:block"
-                                        >
-                                            {currentPage} / {totalPages}
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* 移动端的分页控制 */}
-                                {isMobile && (
-                                    <div className="mt-8 flex justify-center items-center gap-4">
-                                        <button
-                                            onClick={goToPrevPage}
-                                            className={`
-                                                p-3 rounded-full
-                                                bg-gray-200 dark:bg-gray-800/50
-                                                text-gray-700 dark:text-white
-                                                ${currentPage === 1 
-                                                    ? 'opacity-50 cursor-not-allowed' 
-                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
-                                                transition-all duration-200
-                                                shadow-lg
-                                            `}
-                                            disabled={currentPage === 1}
-                                            aria-label="Previous page"
-                                        >
-                                            <ChevronLeft className="w-6 h-6" />
-                                        </button>
-
-                                        <span className="text-gray-700 dark:text-gray-300 font-medium">
-                                            {currentPage} / {totalPages}
-                                        </span>
-
-                                        <button
-                                            onClick={goToNextPage}
-                                            className={`
-                                                p-3 rounded-full
-                                                bg-gray-200 dark:bg-gray-800/50
-                                                text-gray-700 dark:text-white
-                                                ${currentPage === totalPages 
-                                                    ? 'opacity-50 cursor-not-allowed' 
-                                                    : 'hover:bg-gray-300 dark:hover:bg-gray-700'}
-                                                transition-all duration-200
-                                                shadow-lg
-                                            `}
-                                            disabled={currentPage === totalPages}
-                                            aria-label="Next page"
-                                        >
-                                            <ChevronRight className="w-6 h-6" />
-                                        </button>
-                                    </div>
-                                )}
-                            </>
-                        )}
-
-                        {/* 图片网格 */}
-                        <AnimatePresence mode="wait" initial={false}>
-                            <motion.div
-                                // ... 动画属性保持不变 ...
-                                className={`grid gap-6 md:gap-8 lg:gap-10
-                                    ${isMobile ? 'grid-cols-1' : 
-                                      isTablet ? 'grid-cols-2' : 
-                                      'grid-cols-3'}
-                                `}
+                    {posts.length === 0 && loading ? (
+                        <div className="flex justify-center items-center min-h-[200px]">
+                            <LoadingIndicator />
+                        </div>
+                    ) : (
+                        <div className="space-y-8">
+                            <motion.div 
+                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                                variants={{
+                                    show: {
+                                        transition: {
+                                            staggerChildren: 0.1
+                                        }
+                                    }
+                                }}
+                                initial="hidden"
+                                animate="show"
                             >
-                                {currentPosts.map(post => (
-                                    <a
+                                {posts.map((post, index) => (
+                                    <motion.a
                                         key={post.id}
                                         href={post.permalink}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`
-                                            relative group aspect-square 
-                                            ${isMobile ? 'w-full max-w-[400px]' : 
-                                              isTablet ? 'w-full' : 
-                                              'w-full'}
-                                            mx-auto
-                                        `}
+                                        className="group"
+                                        variants={{
+                                            hidden: { opacity: 0, y: 20 },
+                                            show: { opacity: 1, y: 0 }
+                                        }}
+                                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                                        whileHover={{ scale: 1.02 }}
                                     >
-                                        <img
-                                            src={post.media_url}
-                                            alt={post.caption}
-                                            className="w-full h-full object-cover rounded-lg shadow-lg"
-                                        />
-                                        
                                         <div className="
-                                            absolute inset-0 
-                                            bg-black bg-opacity-0 
-                                            group-hover:bg-opacity-30 
+                                            relative 
+                                            bg-white dark:bg-gray-800 
+                                            rounded-xl
+                                            shadow-lg
+                                            overflow-hidden
                                             transition-all duration-300
-                                            flex items-center justify-center
-                                            rounded-lg
+                                            group-hover:shadow-xl
                                         ">
-                                            <span className="
-                                                text-white opacity-0 
-                                                group-hover:opacity-100 
-                                                transition-opacity
-                                                px-6 py-4 text-center
-                                                text-sm sm:text-base lg:text-lg
-                                            ">
-                                                {post.caption?.substring(0, 100) || 'View on Instagram'}
-                                            </span>
+                                            <div className="relative aspect-square">
+                                                <img
+                                                    src={post.media_url}
+                                                    alt={post.caption}
+                                                    className="w-full h-full object-cover"
+                                                    loading="lazy"
+                                                />
+                                                
+                                                <div className="
+                                                    absolute 
+                                                    inset-0 
+                                                    bg-gradient-to-b
+                                                    from-transparent
+                                                    to-black/60
+                                                    opacity-0 
+                                                    group-hover:opacity-100 
+                                                    transition-opacity 
+                                                    duration-300
+                                                ">
+                                                    <div className="
+                                                        absolute
+                                                        bottom-0
+                                                        left-0
+                                                        right-0
+                                                        p-4
+                                                        text-white
+                                                    ">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Heart className="w-4 h-4" />
+                                                            <span className="text-sm">
+                                                                View on Instagram
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm line-clamp-2">
+                                                            {post.caption || 'No caption'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </a>
+                                    </motion.a>
                                 ))}
                             </motion.div>
-                        </AnimatePresence>
 
-                        {/* 移动端的分页控制 */}
-                        {isMounted && isMobile && (
-                            <div className="mt-8 flex justify-center gap-4">
-                                {currentPage > 1 && (
-                                    <button
-                                        onClick={goToPrevPage}
-                                        className="p-3 rounded-full
-                                                 bg-gray-200 dark:bg-gray-800/50
-                                                 text-gray-700 dark:text-white
-                                                 hover:bg-gray-300 dark:hover:bg-gray-700
-                                                 transition-colors backdrop-blur-sm
-                                                 shadow-lg"
-                                        aria-label="Previous page"
-                                    >
-                                        <ChevronLeft className="w-6 h-6" />
-                                    </button>
+                            
+                            {/* 加载指示器 - 移到网格外面确保更好的可见性 */}
+                            <div 
+                                ref={observerTarget} 
+                                className="w-full py-8"
+                            >
+                                {loading && (
+                                    <div className="py-4 flex justify-center">
+                                        <LoadingIndicator />
+                                    </div>
                                 )}
-                                <span className="flex items-center text-gray-700 dark:text-white">
-                                    {currentPage} / {totalPages}
-                                </span>
-                                {currentPage < totalPages && (
-                                    <button
-                                        onClick={goToNextPage}
-                                        className="p-3 rounded-full
-                                                 bg-gray-200 dark:bg-gray-800/50
-                                                 text-gray-700 dark:text-white
-                                                 hover:bg-gray-300 dark:hover:bg-gray-700
-                                                 transition-colors backdrop-blur-sm
-                                                 shadow-lg"
-                                        aria-label="Next page"
+                                {!hasNextPage && posts.length > 0 && (
+                                    <motion.div 
+                                        className="py-4 flex justify-center"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
                                     >
-                                        <ChevronRight className="w-6 h-6" />
-                                    </button>
+                                        <div className="
+                                            bg-white dark:bg-gray-800 
+                                            rounded-xl 
+                                            px-6 
+                                            py-3 
+                                            shadow-lg
+                                            text-gray-600 dark:text-gray-400
+                                            flex
+                                            items-center
+                                            gap-2
+                                        ">
+                                            <Camera className="w-5 h-5" />
+                                            All posts loaded
+                                        </div>
+                                    </motion.div>
                                 )}
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
+                    )}
+                </motion.div>
             </div>
         </div>
     );

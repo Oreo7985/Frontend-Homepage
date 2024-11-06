@@ -1,17 +1,15 @@
 const corsHeaders = {
-	'Access-Control-Allow-Origin': '*',  // 稍后我们会根据环境变量动态设置
+	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Methods': 'GET,OPTIONS',
 	'Access-Control-Max-Age': '86400',
-	'Access-Control-Allow-Headers': 'Content-Type',
+	'Access-Control-Allow-Headers': 'Content-Type, Cursor',  // 添加 Cursor header
   };
   
   // 处理CORS预检请求
   function handleOptions(request) {
-	// 从环境变量获取允许的源
 	const allowedOrigins = env.ALLOWED_ORIGINS.split(',');
 	const origin = request.headers.get('Origin');
 	
-	// 如果请求源在允许列表中，使用具体的源
 	if (origin && allowedOrigins.includes(origin)) {
 	  corsHeaders['Access-Control-Allow-Origin'] = origin;
 	}
@@ -26,7 +24,6 @@ const corsHeaders = {
 	const origin = request.headers.get('Origin');
 	const allowedOrigins = env.ALLOWED_ORIGINS.split(',');
   
-	// 设置CORS headers
 	const responseHeaders = { ...corsHeaders };
 	if (origin && allowedOrigins.includes(origin)) {
 	  responseHeaders['Access-Control-Allow-Origin'] = origin;
@@ -51,8 +48,15 @@ const corsHeaders = {
 	// Instagram API 路由
 	if (url.pathname === '/api/instagram') {
 	  try {
+		// 获取分页参数
+		const cursor = url.searchParams.get('cursor') || null;
+		const limit = parseInt(url.searchParams.get('limit')) || 6;
+		
+		// 构建缓存键，包含分页信息
+		const cacheKey = `posts_${cursor || 'initial'}_${limit}`;
+		
 		// 检查缓存
-		const cached = await env.INSTAGRAM_CACHE.get('posts');
+		const cached = await env.INSTAGRAM_CACHE.get(cacheKey);
 		if (cached) {
 		  const cachedData = JSON.parse(cached);
 		  return new Response(
@@ -71,25 +75,29 @@ const corsHeaders = {
 		  throw new Error('Instagram access token is not configured');
 		}
   
+		// 构建Instagram API URL
+		let apiUrl = `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${env.INSTAGRAM_TOKEN}&limit=${limit}`;
+		
+		if (cursor) {
+		  apiUrl += `&after=${cursor}`;
+		}
+  
 		// 获取Instagram数据
-		const response = await fetch(
-		  `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${env.INSTAGRAM_TOKEN}&limit=20`,
-		  {
-			cf: {
-			  cacheTtl: 300,
-			  cacheEverything: true,
-			}
+		const response = await fetch(apiUrl, {
+		  cf: {
+			cacheTtl: 300,
+			cacheEverything: true,
 		  }
-		);
+		});
   
 		if (!response.ok) {
 		  throw new Error(`Instagram API responded with ${response.status}`);
 		}
   
-		const data = await response.json();
+		const rawData = await response.json();
   
 		// 处理数据
-		const imagePosts = data.data
+		const imagePosts = rawData.data
 		  .filter(post => post.media_type === 'IMAGE')
 		  .map(post => ({
 			id: post.id,
@@ -104,12 +112,17 @@ const corsHeaders = {
 		  success: true,
 		  data: imagePosts,
 		  total: imagePosts.length,
+		  pagination: {
+			hasNextPage: !!rawData.paging?.next,
+			nextCursor: rawData.paging?.cursors?.after || null,
+			prevCursor: rawData.paging?.cursors?.before || null
+		  },
 		  cached: false,
 		  timestamp: new Date().toISOString()
 		};
   
 		// 更新缓存
-		await env.INSTAGRAM_CACHE.put('posts', JSON.stringify(result), {
+		await env.INSTAGRAM_CACHE.put(cacheKey, JSON.stringify(result), {
 		  expirationTtl: 300 // 5分钟缓存
 		});
   
@@ -125,7 +138,6 @@ const corsHeaders = {
 		);
   
 	  } catch (error) {
-		// 添加详细的错误日志
 		console.error('Instagram API Error:', {
 		  message: error.message,
 		  stack: error.stack,
@@ -135,7 +147,7 @@ const corsHeaders = {
 		const errorResponse = {
 		  success: false,
 		  error: 'Failed to fetch Instagram posts',
-		  details: error.message,  // 添加具体错误信息
+		  details: error.message,
 		  timestamp: new Date().toISOString()
 		};
 	  
@@ -167,13 +179,12 @@ const corsHeaders = {
   
   export default {
 	async fetch(request, env, ctx) {
-
-	// 添加详细的环境变量检查
-	console.log('Environment check:', {
+	  // 添加详细的环境变量检查
+	  console.log('Environment check:', {
 		hasToken: !!env.INSTAGRAM_TOKEN,
 		tokenFirstChars: env.INSTAGRAM_TOKEN ? `${env.INSTAGRAM_TOKEN.substr(0, 5)}...` : 'not set',
 		envKeys: Object.keys(env)
-		});
+	  });
 		
 	  // 处理CORS预检请求
 	  if (request.method === 'OPTIONS') {

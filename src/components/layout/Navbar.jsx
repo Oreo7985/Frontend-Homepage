@@ -1,16 +1,17 @@
 import {HomeIcon, UserIcon, Briefcase, InstagramIcon, SunIcon, Menu, X} from 'lucide-react';
 import {Link, useLocation} from 'react-router-dom';
 
-function NavItem({to, icon: Icon, children}) {
+function NavItem({to, icon: Icon, children, onNavigate}) {
     const location = useLocation();
     const isActive = location.pathname === to;
     
     return (
         <Link
             to={to}
+            onClick={onNavigate}
             className={`
                 h-10 flex items-center gap-3 px-4
-                transition-all duration-200
+                transition-all duration-300
                 rounded-lg
                 ${isActive 
                     ? 'text-white bg-gray-800/50' 
@@ -18,12 +19,14 @@ function NavItem({to, icon: Icon, children}) {
             `}
         >
             <Icon 
-                className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} 
+                className="w-5 h-5" 
                 strokeWidth={1.5}
             />
             {children && (
               <span className={`
-                text-base leading-none transition-opacity font-medium
+                text-base leading-none
+                transition-opacity duration-300
+                font-medium
                 ${isActive ? 'opacity-100' : 'opacity-90'}
               `}>
                 {children}
@@ -36,6 +39,12 @@ function NavItem({to, icon: Icon, children}) {
 export default function Navbar({ className, isOpen, onToggle }) {
     const location = useLocation();
     
+    const handleNavigation = () => {
+        if (window.innerWidth < 1280) {
+            onToggle();
+        }
+    };
+    
     return (
         <>
             {/* Mobile Menu Button */}
@@ -46,7 +55,7 @@ export default function Navbar({ className, isOpen, onToggle }) {
                          text-gray-800 dark:text-white
                          rounded-lg backdrop-blur-sm
                          hover:bg-gray-100 dark:hover:bg-gray-700/50
-                         transition-colors"
+                         transition-colors duration-300"
                 aria-label="Toggle menu"
             >
                 {isOpen ? <X size={24}/> : <Menu size={24}/>}
@@ -57,9 +66,8 @@ export default function Navbar({ className, isOpen, onToggle }) {
                 ${className}
                 bg-white/80 dark:bg-black/95
                 backdrop-blur-sm
-                transition-all duration-300
-                xl:translate-x-0
-                ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                transition-all duration-300 ease-in-out
+                xl:translate-x-0 xl:opacity-100
                 fixed
                 top-0
                 left-0
@@ -67,6 +75,9 @@ export default function Navbar({ className, isOpen, onToggle }) {
                 h-screen
                 border-r border-gray-200 dark:border-gray-800/50
                 shadow-lg
+                ${isOpen 
+                    ? 'translate-x-0 opacity-100' 
+                    : '-translate-x-full opacity-0'}
             `}>
                 <div className="h-full flex flex-col">
                     <div className="flex-1"/>
@@ -76,11 +87,12 @@ export default function Navbar({ className, isOpen, onToggle }) {
                         <div className="px-3">
                             <Link 
                                 to="/" 
+                                onClick={handleNavigation}
                                 className="text-2xl sm:text-3xl md:text-4xl 
                                          font-mono tracking-widest 
                                          text-gray-900 dark:text-white 
                                          hover:text-gray-600 dark:hover:text-gray-300 
-                                         transition-colors"
+                                         transition-colors duration-300"
                             >
                                 LUHANG
                             </Link>
@@ -88,10 +100,10 @@ export default function Navbar({ className, isOpen, onToggle }) {
 
                         {/* Navigation Links */}
                         <div className="flex flex-col gap-2 w-full px-3">
-                            <NavItem to="/" icon={HomeIcon}>Home</NavItem>
-                            <NavItem to="/about" icon={UserIcon}>About</NavItem>
-                            <NavItem to="/projects" icon={Briefcase}>Projects</NavItem>
-                            <NavItem to="/instagram" icon={InstagramIcon}>Instagram</NavItem>
+                            <NavItem to="/" icon={HomeIcon} onNavigate={handleNavigation}>Home</NavItem>
+                            <NavItem to="/about" icon={UserIcon} onNavigate={handleNavigation}>About</NavItem>
+                            <NavItem to="/projects" icon={Briefcase} onNavigate={handleNavigation}>Projects</NavItem>
+                            <NavItem to="/instagram" icon={InstagramIcon} onNavigate={handleNavigation}>Instagram</NavItem>
                         </div>
                     </div>
                     
@@ -109,13 +121,18 @@ export default function Navbar({ className, isOpen, onToggle }) {
                 </div>
             </nav>
 
-            {/* 移动端遮罩层 */}
+            {/* 移动端遮罩层 - 添加淡入淡出效果 */}
             {isOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/20 dark:bg-black/50 xl:hidden z-30 backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/20 dark:bg-black/50 xl:hidden z-30 backdrop-blur-sm
+                             animate-fadeIn"
                     onClick={onToggle}
+                    style={{
+                        animation: 'fadeIn 0.3s ease-in-out'
+                    }}
                 />
             )}
         </>
     )
 }
+

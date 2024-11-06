@@ -13,3 +13,5 @@ export const GITHUB_USERNAME = 'Oreo7985'; // 替换用户名
 
 export const getGitHubReposUrl = (username = GITHUB_USERNAME) => 
     `${GITHUB_API_BASE_URL}/users/${username}/repos?sort=stars&per_page=6`;
+
+export const INSTAGRAM_USERNAME = 'oreo_in_germany';
