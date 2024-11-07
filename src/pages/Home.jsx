@@ -68,6 +68,7 @@ export default function Home({ className }) {
                 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-bold mb-4 whitespace-nowrap"
                 variants={fadeInUp}
               >
+                {/* TODO: 'g'  */}
                 <span className="inline-block dark:text-white text-black">Hi, I'm</span>{' '}
                 <span className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-teal-400">
                   Luhang Fang
