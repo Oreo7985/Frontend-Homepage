@@ -10,10 +10,10 @@ export default function Home({ className }) {
   };
 
   const socialLinks = [
-    { icon: <Github className="w-5 h-5" />, href: "https://github.com/yourusername", label: "GitHub" },
-    { icon: <Linkedin className="w-5 h-5" />, href: "https://linkedin.com/in/yourusername", label: "LinkedIn" },
-    { icon: <Mail className="w-5 h-5" />, href: "mailto:your@email.com", label: "Email" },
-    { icon: <Globe className="w-5 h-5" />, href: "https://yourwebsite.com", label: "Website" }
+    { icon: <Github className="w-5 h-5" />, href: "https://github.com/Oreo7985", label: "GitHub" },
+    { icon: <Linkedin className="w-5 h-5" />, href: "https://linkedin.com/in/luhang-fang-52a4181a6/", label: "LinkedIn" },
+    { icon: <Mail className="w-5 h-5" />, href: "contact@luhang.dev", label: "Email" },
+    { icon: <Globe className="w-5 h-5" />, href: "https://luhang.dev", label: "Website" }
   ];
 
   return (
