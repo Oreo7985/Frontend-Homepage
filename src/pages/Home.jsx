@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Github, Linkedin, Mail, Globe } from 'lucide-react';
+import { Github, Linkedin, Mail, Globe, Instagram, Music } from 'lucide-react';
 
 export default function Home({ className }) {
   const fadeInUp = {
@@ -11,8 +11,8 @@ export default function Home({ className }) {
 
   const socialLinks = [
     { icon: <Github className="w-5 h-5" />, href: "https://github.com/Oreo7985", label: "GitHub" },
-    { icon: <Linkedin className="w-5 h-5" />, href: "https://linkedin.com/in/luhang-fang-52a4181a6/", label: "LinkedIn" },
-    { icon: <Mail className="w-5 h-5" />, href: "contact@luhang.dev", label: "Email" },
+    { icon: <Linkedin className="w-5 h-5" />, href: "https://linkedin.com/in/luhang-fang-52a4181a6", label: "LinkedIn" },
+    { icon: <Instagram className="w-5 h-5" />, href: "https://www.instagram.com/oreo_in_germany", label: "Instagram" },
     { icon: <Globe className="w-5 h-5" />, href: "https://luhang.dev", label: "Website" }
   ];
 
@@ -114,7 +114,7 @@ export default function Home({ className }) {
               ))}
             </motion.div>
 
-            {/* CTA 按钮 */}
+            {/* CTA 按钮 
             <motion.div 
               className="flex gap-4 justify-center xl:justify-start w-full"
               variants={fadeInUp}
@@ -162,6 +162,7 @@ export default function Home({ className }) {
                 Contact Me
               </motion.button>
             </motion.div>
+            */}
           </motion.div>
         </motion.div>
       </div>
