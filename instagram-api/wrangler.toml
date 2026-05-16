@@ -10,7 +10,7 @@ kv_namespaces = [
 
 # 添加允许的域名变量
 [vars]
-ALLOWED_ORIGINS = "https://luhang.dev,https://www.luhang.dev,http://localhost:4000,http://localhost:5001"
+ALLOWED_ORIGINS = "https://luhang.dev,https://www.luhang.dev,http://localhost:4000,http://localhost:5001,http://localhost:5002,http://localhost:5173"
 
 # Workers Logs
 # Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/

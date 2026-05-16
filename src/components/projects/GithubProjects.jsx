@@ -1,120 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { Star, GitFork, ArrowUpRight } from 'lucide-react';
 import { getGitHubReposUrl } from '../../config/api';
 
-const LoadingSpinner = () => (
-  <div className="flex justify-center items-center py-20">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
-  </div>
-);
+const LANG_COLORS = {
+  JavaScript: '#f7df1e',
+  TypeScript: '#3178c6',
+  Python: '#3572a5',
+  HTML: '#e34c26',
+  CSS: '#563d7c',
+  Java: '#b07219',
+  Go: '#00add8',
+  Rust: '#dea584',
+};
 
-const ErrorMessage = ({ message }) => (
-  <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-lg">
-    <div className="flex">
-      <div className="flex-shrink-0">
-        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-        </svg>
-      </div>
-      <div className="ml-3">
-        <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-          加载失败
-        </h3>
-        <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-          <p>{message}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const GitHubProjects = ({ username }) => {
+export default function GitHubProjects({ username }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(getGitHubReposUrl(username));
-        if (!response.ok) {
-          throw new Error(`GitHub API 请求失败: ${response.statusText}`);
-        }
-        const data = await response.json();
-        setProjects(data);
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching GitHub projects:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjects();
+    fetch(getGitHubReposUrl(username))
+      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then(data => setProjects(data))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
   }, [username]);
 
-  if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage message={error} />;
-  if (!projects.length) return <p className="text-center py-10 text-gray-600 dark:text-gray-400">暂无项目</p>;
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-      {projects.map(project => (
-        <div 
-          key={project.id} 
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden 
-                     hover:shadow-lg dark:shadow-gray-900/30 transition-shadow duration-300"
-        >
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-medium truncate text-gray-900 dark:text-white">
-                {project.name}
-              </h3>
-              <a 
-                href={project.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 
-                         transition-colors duration-200"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
-              {project.description || '暂无描述'}
-            </p>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1">
-                <svg className="w-4 h-4 text-yellow-500 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {project.stargazers_count}
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {project.forks_count}
-                </span>
-              </div>
-              {project.language && (
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {project.language}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+  if (loading) return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-32 rounded-xl bg-zinc-100 dark:bg-zinc-900 animate-pulse border border-zinc-200 dark:border-zinc-800" />
       ))}
     </div>
   );
-};
 
-export default GitHubProjects;
+  if (error) return (
+    <p className="text-sm text-zinc-500">Could not load repositories — {error}</p>
+  );
+
+  if (!projects.length) return (
+    <p className="text-sm text-zinc-500">No repositories found.</p>
+  );
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {projects.map(repo => (
+        <a
+          key={repo.id}
+          href={repo.html_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex flex-col justify-between p-5 rounded-xl
+                     border border-zinc-200 dark:border-zinc-800
+                     bg-white dark:bg-zinc-900
+                     hover:border-zinc-400 dark:hover:border-zinc-600
+                     transition-all duration-200"
+        >
+          <div>
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate pr-2">
+                {repo.name}
+              </h3>
+              <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500 line-clamp-2 leading-relaxed">
+              {repo.description || 'No description'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 mt-4">
+            {repo.language && (
+              <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: LANG_COLORS[repo.language] || '#888' }}
+                />
+                {repo.language}
+              </span>
+            )}
+            {repo.stargazers_count > 0 && (
+              <span className="flex items-center gap-1 text-xs text-zinc-500">
+                <Star className="w-3 h-3" />
+                {repo.stargazers_count}
+              </span>
+            )}
+            {repo.forks_count > 0 && (
+              <span className="flex items-center gap-1 text-xs text-zinc-500">
+                <GitFork className="w-3 h-3" />
+                {repo.forks_count}
+              </span>
+            )}
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
