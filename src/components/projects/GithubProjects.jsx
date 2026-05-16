@@ -53,7 +53,7 @@ export default function GitHubProjects({ username }) {
           className="group flex flex-col justify-between p-5 rounded-xl
                      border border-zinc-200 dark:border-zinc-800
                      bg-white dark:bg-zinc-900
-                     hover:border-zinc-400 dark:hover:border-zinc-600
+                     hover:border-violet-500/60 dark:hover:border-violet-500/60
                      transition-all duration-200"
         >
           <div>

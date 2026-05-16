@@ -14,7 +14,7 @@ export default function Header({ isDark, onToggleDark }) {
           <a
             key={s}
             href={`#${s.toLowerCase()}`}
-            className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors duration-200"
+            className="hover:text-violet-400 transition-colors duration-200"
           >
             {s}
           </a>

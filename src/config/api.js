@@ -1,8 +1,6 @@
 // src/config/api.js
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://instagram-api.luhang-fang.workers.dev'  // Cloudflare Workers地址
-    : 'http://localhost:8787';           // 开发环境后端地址
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://instagram-api.luhang-fang.workers.dev';
 
 // Instagram API
 export const INSTAGRAM_API_URL = `${API_BASE_URL}/api/instagram`;
