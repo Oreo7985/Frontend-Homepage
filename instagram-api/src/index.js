@@ -295,7 +295,7 @@ async function handleRequest(request, env, ctx) {
       const artists = artistsData.items.map(artist => ({
         id: artist.id,
         name: artist.name,
-        genres: artist.genres.slice(0, 2),
+        genres: (artist.genres ?? []).slice(0, 2),
         image: artist.images[1]?.url ?? artist.images[0]?.url,
         url: artist.external_urls.spotify,
       }));
