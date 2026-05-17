@@ -150,7 +150,7 @@ async function handleRequest(request, env, ctx) {
 
       const rawData = await igRes.json();
       const imagePosts = rawData.data
-        .filter(p => p.media_type === 'IMAGE')
+        .filter(p => p.media_type === 'IMAGE' || p.media_type === 'CAROUSEL_ALBUM')
         .map(p => ({ id: p.id, caption: p.caption || '', media_url: p.media_url, permalink: p.permalink, timestamp: p.timestamp }))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
