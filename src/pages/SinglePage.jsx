@@ -527,9 +527,8 @@ function SpotifySection() {
           </motion.div>
         )}
 
-        {/* Recently played + Top artists */}
-        <div className="grid md:grid-cols-2 gap-10">
-          {/* Recently played */}
+        {/* Recently played + Top tracks */}
+        <div className="grid md:grid-cols-2 gap-10 mb-12">
           <motion.div {...fadeUp}>
             <p className="text-xs uppercase tracking-widest text-zinc-600 mb-3">Recently Played</p>
             {loading && (
@@ -544,11 +543,10 @@ function SpotifySection() {
             ))}
           </motion.div>
 
-          {/* Top artists */}
           <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }}>
-            <p className="text-xs uppercase tracking-widest text-zinc-600 mb-3">Top Artists</p>
+            <p className="text-xs uppercase tracking-widest text-zinc-600 mb-3">Top Tracks</p>
             {topLoading && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="h-12 rounded-xl bg-zinc-900 animate-pulse" />
                 ))}
@@ -557,35 +555,57 @@ function SpotifySection() {
             {!topLoading && !topData && (
               <p className="text-xs text-zinc-700">No data available.</p>
             )}
-            {topData?.artists?.map((artist, i) => (
-              <motion.a
-                key={artist.id}
-                href={artist.url}
-                target="_blank" rel="noopener noreferrer"
-                className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-900 transition-all duration-200"
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-              >
-                <span className="text-xs text-zinc-700 w-4 text-right flex-shrink-0">{i + 1}</span>
-                <div className="w-9 h-9 rounded-full overflow-hidden ring-1 ring-zinc-800
-                                group-hover:ring-violet-500/40 transition-all flex-shrink-0">
-                  {artist.image
-                    ? <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs">{artist.name[0]}</div>
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-zinc-200 truncate group-hover:text-white transition-colors leading-tight">{artist.name}</p>
-                  {artist.genres[0] && (
-                    <p className="text-xs text-zinc-600 truncate">{artist.genres[0]}</p>
-                  )}
-                </div>
-                <ArrowUpRight className="w-3 h-3 text-zinc-700 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
-              </motion.a>
+            {topData?.tracks?.map((track, i) => (
+              <TrackRow key={track.id} track={track} index={i} />
             ))}
           </motion.div>
         </div>
+
+        {/* Top artists */}
+        {(topLoading || topData?.artists) && (
+          <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }}>
+            <p className="text-xs uppercase tracking-widest text-zinc-600 mb-4">Top Artists</p>
+            {topLoading && (
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2">
+                    <div className="w-14 h-14 rounded-full bg-zinc-900 animate-pulse" />
+                    <div className="w-12 h-3 rounded bg-zinc-900 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {topData?.artists && (
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                {topData.artists.map((artist, i) => (
+                  <motion.a
+                    key={artist.id}
+                    href={artist.url}
+                    target="_blank" rel="noopener noreferrer"
+                    className="group flex flex-col items-center gap-2 text-center"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-zinc-800
+                                    group-hover:ring-violet-500/50 transition-all duration-200">
+                      {artist.image
+                        ? <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs">{artist.name[0]}</div>
+                      }
+                    </div>
+                    <div className="w-full px-1">
+                      <p className="text-xs text-zinc-300 group-hover:text-white transition-colors leading-tight line-clamp-2 break-words">{artist.name}</p>
+                      {artist.genres[0] && (
+                        <p className="text-[10px] text-zinc-600 truncate mt-0.5">{artist.genres[0]}</p>
+                      )}
+                    </div>
+                  </motion.a>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {!loading && !data && (
           <p className="text-sm text-zinc-600">No listening data available.</p>
