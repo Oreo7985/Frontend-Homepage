@@ -10,7 +10,7 @@ export default function Header({ isDark, onToggleDark }) {
       </span>
 
       <nav className="hidden sm:flex items-center gap-8 text-xs tracking-wide text-zinc-500 dark:text-zinc-500">
-        {['About', 'Projects', 'Instagram'].map(s => (
+        {['About', 'Projects', 'Spotify', 'Instagram'].map(s => (
           <a
             key={s}
             href={`#${s.toLowerCase()}`}

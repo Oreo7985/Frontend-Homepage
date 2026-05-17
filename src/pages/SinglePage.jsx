@@ -6,11 +6,11 @@ import {
 } from 'lucide-react';
 import {
   SiReact, SiNodedotjs, SiTypescript, SiPython,
-  SiPostgresql, SiDocker, SiCloudflare, SiTensorflow, SiGit,
+  SiPostgresql, SiDocker, SiCloudflare, SiTensorflow, SiGit, SiSpotify,
 } from 'react-icons/si';
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps';
 import GitHubProjects from '../components/projects/GithubProjects';
-import { GITHUB_USERNAME, INSTAGRAM_API_URL, INSTAGRAM_USERNAME } from '../config/api';
+import { GITHUB_USERNAME, INSTAGRAM_API_URL, INSTAGRAM_USERNAME, SPOTIFY_API_URL, SPOTIFY_TOP_API_URL } from '../config/api';
 
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -354,6 +354,235 @@ function Projects() {
   );
 }
 
+// ─── Spotify ─────────────────────────────────────────────────────────────────
+
+function TrackRow({ track, index, showTime = false }) {
+  const formatTime = (iso) => {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+    if (diff < 1) return 'just now';
+    if (diff < 60) return `${diff}m ago`;
+    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+    return `${Math.floor(diff / 1440)}d ago`;
+  };
+
+  return (
+    <motion.a
+      href={track.url}
+      target="_blank" rel="noopener noreferrer"
+      className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-zinc-900 transition-all duration-200"
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.04 }}
+    >
+      <span className="text-xs text-zinc-700 w-4 text-right flex-shrink-0">{index + 1}</span>
+      <img src={track.image} alt={track.album}
+        className="w-9 h-9 rounded-md object-cover flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-zinc-200 truncate group-hover:text-white transition-colors leading-tight">{track.name}</p>
+        <p className="text-xs text-zinc-600 truncate">{track.artist}</p>
+      </div>
+      {showTime && track.played_at && (
+        <span className="text-xs text-zinc-700 flex-shrink-0 group-hover:opacity-0 transition-opacity">
+          {formatTime(track.played_at)}
+        </span>
+      )}
+      <ArrowUpRight className="w-3 h-3 text-zinc-700 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
+    </motion.a>
+  );
+}
+
+function SpotifySection() {
+  const [data, setData] = useState(null);
+  const [topData, setTopData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [lyrics, setLyrics] = useState(null);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(SPOTIFY_API_URL)
+      .then(r => r.json())
+      .then(d => { if (d.success) setData(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    fetch(SPOTIFY_TOP_API_URL)
+      .then(r => r.json())
+      .then(d => { if (d.success) setTopData(d); })
+      .catch(() => {});
+  }, []);
+
+  const handleLyrics = async (track) => {
+    if (showLyrics) { setShowLyrics(false); return; }
+    setShowLyrics(true);
+    setLyrics(null);
+    setLyricsLoading(true);
+    try {
+      const res = await fetch(
+        `https://lrclib.net/api/get?artist_name=${encodeURIComponent(track.artist)}&track_name=${encodeURIComponent(track.name)}`
+      );
+      if (!res.ok) throw new Error('not found');
+      const d = await res.json();
+      setLyrics(d.plainLyrics || null);
+    } catch {
+      setLyrics(null);
+    }
+    setLyricsLoading(false);
+  };
+
+  const currentTrack = data?.current;
+
+  return (
+    <section id="spotify" className="border-t border-zinc-800/60">
+      <div className="max-w-4xl mx-auto px-8 md:px-14 py-24">
+        <motion.div {...fadeUp} className="flex items-end justify-between mb-10">
+          <SectionLabel>Listening</SectionLabel>
+          <a
+            href="https://open.spotify.com"
+            target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-zinc-500
+                       hover:text-green-400 transition-colors duration-200 mb-10"
+          >
+            <SiSpotify className="w-3.5 h-3.5 text-green-400" />
+            Spotify
+            <ArrowUpRight className="w-3 h-3" />
+          </a>
+        </motion.div>
+
+        {/* Currently playing */}
+        {currentTrack && (
+          <motion.div {...fadeUp} className="mb-8">
+            <div className="flex items-center gap-4 p-4 rounded-2xl border border-green-500/25 bg-green-950/15">
+              <div className="relative flex-shrink-0">
+                <img src={currentTrack.image} alt={currentTrack.album}
+                  className="w-14 h-14 rounded-xl object-cover" />
+                {currentTrack.is_playing && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-400 border-2 border-zinc-950 animate-pulse" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-green-400 mb-1">
+                  {currentTrack.is_playing ? '▶ Now playing' : '⏸ Paused'}
+                </p>
+                <p className="text-sm font-medium text-zinc-100 truncate">{currentTrack.name}</p>
+                <p className="text-xs text-zinc-500 truncate">{currentTrack.artist}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleLyrics(currentTrack)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-all duration-200
+                    ${showLyrics
+                      ? 'border-green-500/50 text-green-400 bg-green-950/30'
+                      : 'border-zinc-700 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'}`}
+                >
+                  {showLyrics ? 'Hide lyrics' : 'Lyrics'}
+                </button>
+                <a href={currentTrack.url} target="_blank" rel="noopener noreferrer"
+                  className="text-zinc-600 hover:text-green-400 transition-colors">
+                  <ArrowUpRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+
+            {/* Lyrics panel */}
+            {showLyrics && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-2 rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden"
+              >
+                <div className="p-5 max-h-72 overflow-y-auto">
+                  {lyricsLoading && (
+                    <p className="text-xs text-zinc-600 animate-pulse">Loading lyrics...</p>
+                  )}
+                  {!lyricsLoading && lyrics && (
+                    <p className="text-sm text-zinc-400 leading-7 whitespace-pre-line">{lyrics}</p>
+                  )}
+                  {!lyricsLoading && !lyrics && (
+                    <p className="text-xs text-zinc-600">No lyrics found for this track.</p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Recently played + Top tracks */}
+        <div className="grid md:grid-cols-2 gap-10 mb-10">
+          {/* Recently played */}
+          <motion.div {...fadeUp}>
+            <p className="text-xs uppercase tracking-widest text-zinc-600 mb-3">Recently Played</p>
+            {loading && (
+              <div className="space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-12 rounded-xl bg-zinc-900 animate-pulse" />
+                ))}
+              </div>
+            )}
+            {data?.tracks?.map((track, i) => (
+              <TrackRow key={track.id} track={track} index={i} showTime />
+            ))}
+          </motion.div>
+
+          {/* Top tracks */}
+          <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }}>
+            <p className="text-xs uppercase tracking-widest text-zinc-600 mb-3">Top Tracks</p>
+            {!topData && (
+              <div className="space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-12 rounded-xl bg-zinc-900 animate-pulse" />
+                ))}
+              </div>
+            )}
+            {topData?.tracks?.map((track, i) => (
+              <TrackRow key={track.id} track={track} index={i} />
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Top artists */}
+        {topData?.artists && (
+          <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }}>
+            <p className="text-xs uppercase tracking-widest text-zinc-600 mb-4">Top Artists</p>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+              {topData.artists.map((artist, i) => (
+                <motion.a
+                  key={artist.id}
+                  href={artist.url}
+                  target="_blank" rel="noopener noreferrer"
+                  className="group flex flex-col items-center gap-2 text-center"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-zinc-800
+                                  group-hover:ring-violet-500/50 transition-all duration-200 flex-shrink-0">
+                    {artist.image
+                      ? <img src={artist.image} alt={artist.name} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs">{artist.name[0]}</div>
+                    }
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-300 group-hover:text-white transition-colors leading-tight truncate w-16">{artist.name}</p>
+                    {artist.genres[0] && (
+                      <p className="text-[10px] text-zinc-600 truncate w-16 mt-0.5">{artist.genres[0]}</p>
+                    )}
+                  </div>
+                </motion.a>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {!loading && !data && (
+          <p className="text-sm text-zinc-600">No listening data available.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ─── Instagram ───────────────────────────────────────────────────────────────
 
 function InstagramSection() {
@@ -497,6 +726,7 @@ export default function SinglePage() {
       <Hero bgPhotos={bgPhotos} />
       <About />
       <Projects />
+      <SpotifySection />
       <InstagramSection />
       <Footer />
     </>

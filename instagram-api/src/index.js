@@ -1,5 +1,5 @@
 const TOKEN_KV_KEY = 'instagram_token_data';
-const REFRESH_BEFORE_DAYS = 7; // refresh when < 7 days remaining
+const REFRESH_BEFORE_DAYS = 7;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +18,7 @@ function getResponseHeaders(request, env) {
   return headers;
 }
 
-// ─── Token management ────────────────────────────────────────────────────────
+// ─── Instagram token management ──────────────────────────────────────────────
 
 async function doRefresh(token) {
   const res = await fetch(
@@ -28,101 +28,111 @@ async function doRefresh(token) {
     const text = await res.text();
     throw new Error(`Token refresh failed (${res.status}): ${text}`);
   }
-  return res.json(); // { access_token, token_type, expires_in }
+  return res.json();
 }
 
-async function storeToken({ access_token, expires_in }, env) {
+async function storeInstagramToken({ access_token, expires_in }, env) {
   const expires_at = Date.now() + expires_in * 1000;
-  // Store in KV with TTL slightly shorter than token lifetime
-  const ttl = Math.max(expires_in - 3600, 86400);
   await env.INSTAGRAM_CACHE.put(
     TOKEN_KV_KEY,
     JSON.stringify({ token: access_token, expires_at }),
-    { expirationTtl: ttl }
+    { expirationTtl: Math.max(expires_in - 3600, 86400) }
   );
 }
 
-async function refreshAndStore(currentToken, env) {
+async function refreshAndStoreInstagram(currentToken, env) {
   try {
     const data = await doRefresh(currentToken);
-    await storeToken(data, env);
-    console.log('Token refreshed successfully, new expiry:', new Date(Date.now() + data.expires_in * 1000).toISOString());
+    await storeInstagramToken(data, env);
   } catch (e) {
-    console.error('Token refresh failed:', e.message);
+    console.error('Instagram token refresh failed:', e.message);
   }
 }
 
-/**
- * Returns a valid token, auto-refreshing when needed.
- *
- * Flow:
- * 1. Check KV for a stored token
- * 2a. Token fresh → use it
- * 2b. Token expiring soon → use it now, refresh in background via ctx.waitUntil
- * 2c. Token expired or missing → use env.INSTAGRAM_TOKEN to refresh synchronously
- */
-async function getValidToken(env, ctx) {
+async function getInstagramToken(env, ctx) {
   const stored = await env.INSTAGRAM_CACHE.get(TOKEN_KV_KEY, 'json');
   const now = Date.now();
-  const refreshThresholdMs = REFRESH_BEFORE_DAYS * 24 * 60 * 60 * 1000;
+  const thresholdMs = REFRESH_BEFORE_DAYS * 24 * 60 * 60 * 1000;
 
   if (stored?.token && stored?.expires_at) {
     const timeLeft = stored.expires_at - now;
-
-    if (timeLeft > refreshThresholdMs) {
-      // Fresh — no action needed
-      return stored.token;
-    }
-
+    if (timeLeft > thresholdMs) return stored.token;
     if (timeLeft > 0) {
-      // Valid but expiring soon — serve this request, refresh in background
-      console.log(`Token expiring in ${Math.floor(timeLeft / 86400000)} days — refreshing in background`);
-      ctx.waitUntil(refreshAndStore(stored.token, env));
+      ctx.waitUntil(refreshAndStoreInstagram(stored.token, env));
       return stored.token;
     }
-    // Stored token has expired — fall through
   }
 
-  // No valid stored token: use env secret as base, refresh it to get expiry info
   const baseToken = env.INSTAGRAM_TOKEN;
-  if (!baseToken) throw new Error('INSTAGRAM_TOKEN secret is not configured in Cloudflare');
-
-  console.log('No stored token found — performing initial refresh');
+  if (!baseToken) throw new Error('INSTAGRAM_TOKEN secret is not configured');
   const data = await doRefresh(baseToken);
-  await storeToken(data, env);
+  await storeInstagramToken(data, env);
   return data.access_token;
 }
 
-// ─── Request handling ────────────────────────────────────────────────────────
+// ─── Spotify token management ─────────────────────────────────────────────────
+
+async function getSpotifyToken(env) {
+  const cached = await env.INSTAGRAM_CACHE.get('spotify_access_token', 'json');
+  if (cached?.token && cached.expires_at > Date.now() + 60_000) {
+    return cached.token;
+  }
+
+  if (!env.SPOTIFY_CLIENT_ID || !env.SPOTIFY_CLIENT_SECRET || !env.SPOTIFY_REFRESH_TOKEN) {
+    throw new Error('Spotify secrets not configured');
+  }
+
+  const credentials = btoa(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`);
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `grant_type=refresh_token&refresh_token=${env.SPOTIFY_REFRESH_TOKEN}`,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Spotify auth failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  await env.INSTAGRAM_CACHE.put(
+    'spotify_access_token',
+    JSON.stringify({ token: data.access_token, expires_at: Date.now() + (data.expires_in - 60) * 1000 }),
+    { expirationTtl: data.expires_in - 60 }
+  );
+  return data.access_token;
+}
+
+// ─── Request handling ─────────────────────────────────────────────────────────
 
 async function handleRequest(request, env, ctx) {
   const url = new URL(request.url);
   const headers = getResponseHeaders(request, env);
 
-  // Health check — also shows token status
+  // ── Health ──
   if (url.pathname === '/health') {
     const stored = await env.INSTAGRAM_CACHE.get(TOKEN_KV_KEY, 'json');
     const daysLeft = stored?.expires_at
-      ? Math.floor((stored.expires_at - Date.now()) / 86400000)
+      ? Math.floor((stored.expires_at - Date.now()) / 86_400_000)
       : null;
-
     return new Response(JSON.stringify({
       status: 'healthy',
-      token_stored: !!stored?.token,
-      token_expires_at: stored?.expires_at ? new Date(stored.expires_at).toISOString() : null,
-      token_days_remaining: daysLeft,
+      instagram_token_stored: !!stored?.token,
+      instagram_token_days_remaining: daysLeft,
       timestamp: new Date().toISOString(),
     }), { headers: { 'Content-Type': 'application/json', ...headers } });
   }
 
-  // Instagram posts
+  // ── Instagram posts ──
   if (url.pathname === '/api/instagram') {
     try {
       const cursor = url.searchParams.get('cursor') || null;
       const limit = parseInt(url.searchParams.get('limit')) || 6;
       const cacheKey = `posts_${cursor || 'initial'}_${limit}`;
 
-      // Check post cache first
       const cached = await env.INSTAGRAM_CACHE.get(cacheKey);
       if (cached) {
         return new Response(
@@ -131,64 +141,182 @@ async function handleRequest(request, env, ctx) {
         );
       }
 
-      const token = await getValidToken(env, ctx);
-
+      const token = await getInstagramToken(env, ctx);
       let apiUrl = `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${token}&limit=${limit}`;
       if (cursor) apiUrl += `&after=${cursor}`;
 
-      const igRes = await fetch(apiUrl, {
-        cf: { cacheTtl: 300, cacheEverything: true },
-      });
+      const igRes = await fetch(apiUrl, { cf: { cacheTtl: 300, cacheEverything: true } });
       if (!igRes.ok) throw new Error(`Instagram API responded with ${igRes.status}`);
 
       const rawData = await igRes.json();
       const imagePosts = rawData.data
         .filter(p => p.media_type === 'IMAGE')
-        .map(p => ({
-          id: p.id,
-          caption: p.caption || '',
-          media_url: p.media_url,
-          permalink: p.permalink,
-          timestamp: p.timestamp,
-        }))
+        .map(p => ({ id: p.id, caption: p.caption || '', media_url: p.media_url, permalink: p.permalink, timestamp: p.timestamp }))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
       const result = {
-        success: true,
-        data: imagePosts,
-        total: imagePosts.length,
+        success: true, data: imagePosts, total: imagePosts.length,
         pagination: {
           hasNextPage: !!rawData.paging?.next,
           nextCursor: rawData.paging?.cursors?.after || null,
           prevCursor: rawData.paging?.cursors?.before || null,
         },
-        cached: false,
-        timestamp: new Date().toISOString(),
+        cached: false, timestamp: new Date().toISOString(),
       };
 
       await env.INSTAGRAM_CACHE.put(cacheKey, JSON.stringify(result), { expirationTtl: 300 });
-
       return new Response(JSON.stringify(result), {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300', ...headers },
       });
 
     } catch (error) {
-      console.error('Instagram API error:', error.message);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Failed to fetch Instagram posts',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...headers },
+      console.error('Instagram error:', error.message);
+      return new Response(JSON.stringify({ success: false, error: error.message, timestamp: new Date().toISOString() }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...headers },
+      });
+    }
+  }
+
+  // ── Spotify recently played ──
+  if (url.pathname === '/api/spotify') {
+    try {
+      const cacheKey = 'spotify_recent';
+      const cached = await env.INSTAGRAM_CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(
+          JSON.stringify({ ...JSON.parse(cached), cached: true }),
+          { headers: { 'Content-Type': 'application/json', ...headers } }
+        );
+      }
+
+      const token = await getSpotifyToken(env);
+
+      const nowRes = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      let currentTrack = null;
+      if (nowRes.status === 200) {
+        const nowData = await nowRes.json();
+        if (nowData?.item) {
+          currentTrack = {
+            id: nowData.item.id,
+            name: nowData.item.name,
+            artist: nowData.item.artists.map(a => a.name).join(', '),
+            album: nowData.item.album.name,
+            image: nowData.item.album.images[1]?.url ?? nowData.item.album.images[0]?.url,
+            url: nowData.item.external_urls.spotify,
+            is_playing: nowData.is_playing,
+          };
+        }
+      }
+
+      const recentRes = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=20', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!recentRes.ok) throw new Error(`Spotify API: ${recentRes.status}`);
+
+      const recentData = await recentRes.json();
+
+      // Deduplicate by track ID, keep most recent play
+      const seen = new Set();
+      const tracks = recentData.items
+        .filter(item => {
+          if (seen.has(item.track.id)) return false;
+          seen.add(item.track.id);
+          return true;
+        })
+        .slice(0, 6)
+        .map(item => ({
+          id: item.track.id,
+          name: item.track.name,
+          artist: item.track.artists.map(a => a.name).join(', '),
+          album: item.track.album.name,
+          image: item.track.album.images[1]?.url ?? item.track.album.images[0]?.url,
+          url: item.track.external_urls.spotify,
+          played_at: item.played_at,
+        }));
+
+      const result = { success: true, current: currentTrack, tracks, cached: false };
+      await env.INSTAGRAM_CACHE.put(cacheKey, JSON.stringify(result), { expirationTtl: 60 });
+
+      return new Response(JSON.stringify(result), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', ...headers },
+      });
+
+    } catch (error) {
+      console.error('Spotify error:', error.message);
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...headers },
+      });
+    }
+  }
+
+  // ── Spotify top tracks + artists ──
+  if (url.pathname === '/api/spotify/top') {
+    try {
+      const cacheKey = 'spotify_top';
+      const cached = await env.INSTAGRAM_CACHE.get(cacheKey);
+      if (cached) {
+        return new Response(
+          JSON.stringify({ ...JSON.parse(cached), cached: true }),
+          { headers: { 'Content-Type': 'application/json', ...headers } }
+        );
+      }
+
+      const token = await getSpotifyToken(env);
+
+      const [tracksRes, artistsRes] = await Promise.all([
+        fetch('https://api.spotify.com/v1/me/top/tracks?limit=6&time_range=medium_term', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+        fetch('https://api.spotify.com/v1/me/top/artists?limit=6&time_range=medium_term', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+      ]);
+
+      if (!tracksRes.ok) throw new Error(`Top tracks: ${tracksRes.status}`);
+      if (!artistsRes.ok) throw new Error(`Top artists: ${artistsRes.status}`);
+
+      const [tracksData, artistsData] = await Promise.all([
+        tracksRes.json(),
+        artistsRes.json(),
+      ]);
+
+      const tracks = tracksData.items.map(track => ({
+        id: track.id,
+        name: track.name,
+        artist: track.artists.map(a => a.name).join(', '),
+        album: track.album.name,
+        image: track.album.images[1]?.url ?? track.album.images[0]?.url,
+        url: track.external_urls.spotify,
+      }));
+
+      const artists = artistsData.items.map(artist => ({
+        id: artist.id,
+        name: artist.name,
+        genres: artist.genres.slice(0, 2),
+        image: artist.images[1]?.url ?? artist.images[0]?.url,
+        url: artist.external_urls.spotify,
+      }));
+
+      const result = { success: true, tracks, artists, cached: false };
+      await env.INSTAGRAM_CACHE.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
+
+      return new Response(JSON.stringify(result), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600', ...headers },
+      });
+
+    } catch (error) {
+      console.error('Spotify top error:', error.message);
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...headers },
       });
     }
   }
 
   return new Response(JSON.stringify({ success: false, error: 'Not Found' }), {
-    status: 404,
-    headers: { 'Content-Type': 'application/json', ...headers },
+    status: 404, headers: { 'Content-Type': 'application/json', ...headers },
   });
 }
 
